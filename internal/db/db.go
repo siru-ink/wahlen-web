@@ -5,6 +5,7 @@ import (
 	"embed"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
 )
@@ -49,4 +50,11 @@ func runDbMigrations(db *sql.DB) error {
 	}
 
 	return nil
+}
+
+func DbMiddleware(db *sql.DB) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Set("db", db)
+		c.Next()
+	}
 }
