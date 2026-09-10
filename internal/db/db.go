@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"embed"
+	"time"
 
 	"github.com/pressly/goose/v3"
 	_ "modernc.org/sqlite"
@@ -18,6 +19,11 @@ func InitializeDb(dbPath string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(5 * time.Minute)
+	db.SetConnMaxIdleTime(1 * time.Minute)
 
 	err = runDbMigrations(db)
 	if err != nil {
