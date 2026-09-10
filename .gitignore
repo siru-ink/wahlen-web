@@ -1,0 +1,6 @@
+# Personal IDE settings
+.zed/settings.json
+
+# Go build outputs
+data.db
+server
