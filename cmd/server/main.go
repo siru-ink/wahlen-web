@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+
 	"code.siru.ink/vdh/wahlen-web/internal/db"
 	"code.siru.ink/vdh/wahlen-web/internal/routing"
 )
@@ -12,7 +14,12 @@ func main() {
 	}
 	defer db.Close()
 
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "80"
+	}
+
 	router := routing.InitializeRouter(db)
 
-	router.Run(":80")
+	router.Run(":" + port)
 }
