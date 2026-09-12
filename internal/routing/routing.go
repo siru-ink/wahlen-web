@@ -26,6 +26,8 @@ func InitializeRouter(db *sql.DB) *gin.Engine {
 	router.Use(db_pkg.DbMiddleware(db))
 
 	router.GET("/login", Login)
+	router.GET("/signup", Signup)
+	// router.POST("/signup", SignupPost)
 
 	return router
 }

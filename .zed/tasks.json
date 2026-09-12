@@ -40,7 +40,7 @@
   {
     "label": "Build Server Application",
     "command": "go",
-    "args": ["build", "./cmd/server/"],
+    "args": ["build", "-tags=nomsgpack", "./cmd/server/"],
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
     "reveal": "always",
@@ -55,7 +55,8 @@
     "label": "Run Server",
     "command": "./server",
     "env": {
-      "SERVER_PORT": "11000"
+      "SERVER_PORT": "11000",
+      "SERVER_ENCRYPTION_KEY": "aff5b139865fb0959cce1164d4e23cdb5744f922e80a8f7a8b0ca0e6be6d2f72"
     },
     "use_new_terminal": false,
     "allow_concurrent_runs": false,
