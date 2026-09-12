@@ -49,7 +49,9 @@ func Encrypt(text string) (encryptedMessage string, err error) {
 		return "", err
 	}
 
-	ciphertext := aesGCM.Seal(nonce, nonce, plaintext, nil)
+	cipherValues := aesGCM.Seal(nil, nonce, plaintext, nil)
+
+	ciphertext := append(nonce, cipherValues...)
 
 	return fmt.Sprintf("%x", ciphertext), nil
 }
