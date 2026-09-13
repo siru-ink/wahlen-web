@@ -18,5 +18,11 @@ func Login(c *gin.Context) {
 }
 
 func Signup(c *gin.Context) {
-	c.HTML(http.StatusOK, "signup.tmpl", nil)
+	flash_message, _ := cookie.Break(c, cookie.FlashCookie)
+
+	context := gin.H{
+		"flash_message": flash_message,
+	}
+
+	c.HTML(http.StatusOK, "signup.tmpl", context)
 }
