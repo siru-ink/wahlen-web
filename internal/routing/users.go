@@ -35,17 +35,19 @@ func Signup(c *gin.Context) {
 }
 
 func SignupPost(c *gin.Context) {
-	username := c.PostForm("username")
-	if username == "" {
+	usernameRaw := c.PostForm("username")
+	if usernameRaw == "" {
 		context := gin.H{
 			"flash_message": "Username must not be empty.",
 		}
 		c.HTML(http.StatusUnprocessableEntity, "signup.tmpl", context)
 		return
 	}
+	username := norm.NFC.String(usernameRaw)
 
-	password := c.PostForm("password")
-	if checkPasswordGuidelines(password) {
+	passwordRaw := c.PostForm("password")
+	password := norm.NFC.String(passwordRaw)
+	if passwordFailsGuidelines(password) {
 		context := gin.H{
 			"flash_message": "Password must be at least 15 characters long and contain at least 1 number.",
 		}
