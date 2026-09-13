@@ -8,7 +8,7 @@ import (
 )
 
 func Login(c *gin.Context) {
-	flash_message, _ := cookie.Break(c, cookie.FlashCookie)
+	flash_message, _ := cookie.FlashCookie.Break(c)
 
 	context := gin.H{
 		"flash_message": flash_message,
@@ -18,7 +18,7 @@ func Login(c *gin.Context) {
 }
 
 func Signup(c *gin.Context) {
-	flash_message, _ := cookie.Break(c, cookie.FlashCookie)
+	flash_message, _ := cookie.FlashCookie.Break(c)
 
 	context := gin.H{
 		"flash_message": flash_message,
