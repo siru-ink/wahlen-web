@@ -4,10 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"strings"
+	"unicode"
+	"unicode/utf8"
 
 	"code.siru.ink/vdh/wahlen-web/internal/cookie"
 	"code.siru.ink/vdh/wahlen-web/internal/db"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/text/unicode/norm"
 )
 
 func Login(c *gin.Context) {
@@ -72,6 +76,13 @@ func SignupPost(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/login")
 }
 
-func checkPasswordGuidelines(password string) (failed bool) {
-	return true // all password attempts fail until implemented
+func passwordFailsGuidelines(password string) (failed bool) {
+	// normalize unicode representation before doing length counting
+	if !norm.NFC.IsNormalString(password) {
+		password = norm.NFC.String(password)
+	}
+
+	containsDigit := strings.ContainsFunc(password, unicode.IsDigit)
+	atLeast15Char := utf8.RuneCountInString(password) >= 15
+	return containsDigit && atLeast15Char
 }
