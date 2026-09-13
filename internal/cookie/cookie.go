@@ -61,6 +61,12 @@ func (ct CookieType) Break(c *gin.Context) (value string, err error) {
 		return "", nil
 	}
 
+	// Flash messages should only be displayed once, so reading them
+	// automatically destroys the cookie
+	if ct == FlashCookie {
+		FlashCookie.Loose(c)
+	}
+
 	decryptedValue, err := crypto.Decrypt(cookie.Value)
 	if err != nil {
 		return "", err
