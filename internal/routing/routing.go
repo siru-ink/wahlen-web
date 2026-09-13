@@ -27,7 +27,7 @@ func InitializeRouter(db *sql.DB) *gin.Engine {
 
 	router.GET("/login", Login)
 	router.GET("/signup", Signup)
-	// router.POST("/signup", SignupPost)
+	router.POST("/signup", SignupPost)
 
 	return router
 }
