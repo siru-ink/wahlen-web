@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	db, err := db.InitializeDb("data.db")
+	db, err := db.InitializeDb("file:data.db?_pragma=foreign_keys(1)")
 	if err != nil {
 		panic(err)
 	}
