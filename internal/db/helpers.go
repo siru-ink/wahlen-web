@@ -6,8 +6,14 @@ import (
 )
 
 func CheckUserExistence(db *sql.DB, handlerContext context.Context, username string) (exists bool) {
-	// row, err := db.QueryContext(handlerContext, "SELECT * FROM users WHERE username = ?", username)
-	return false
+	row := db.QueryRowContext(handlerContext, "SELECT * FROM users WHERE username = ?", username)
+
+	err := row.Scan() // Since this is just checking for existence no values are actually needed
+
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func RegisterUser(db *sql.DB, handlerContext context.Context, username, password string) {}
