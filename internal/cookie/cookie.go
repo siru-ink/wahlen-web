@@ -12,10 +12,12 @@ type CookieType int
 
 const (
 	SessionCookie CookieType = iota
+	FlashCookie
 )
 
 var cookieName = map[CookieType]string{
 	SessionCookie: "session-id",
+	FlashCookie:   "flash-message",
 }
 
 func (ct CookieType) String() string {

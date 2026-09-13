@@ -10,6 +10,7 @@
     </head>
     <body>
         <div id="pageContent">
+            {{ template "_flash_message.tmpl" .flash_message }}
             <form action="/login" method="post">
                 <label for="username">Username:</label>
                 <input type="text" name="username" id="username" />
