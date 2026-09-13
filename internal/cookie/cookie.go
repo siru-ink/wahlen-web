@@ -20,31 +20,43 @@ var cookieName = map[CookieType]string{
 	FlashCookie:   "flash-message",
 }
 
+var (
+	cookiePath         = "/"
+	cookieDomain       = "localhost"
+	cookieMaxAge       = 24 * 60 * 60 // one full day
+	cookieSecureOnly   = false
+	cookieHttpOnly     = true
+	cookieSameSiteMode = http.SameSiteLaxMode
+)
+
 func (ct CookieType) String() string {
 	return cookieName[ct]
 }
 
-func Build(name CookieType, value string) (newCookie http.Cookie, err error) {
+func (ct CookieType) Seal(c *gin.Context, value string) (err error) {
 	encryptedValue, err := crypto.Encrypt(value)
 	if err != nil {
-		return http.Cookie{}, err
+		return err
 	}
 
-	return http.Cookie{
-		Name:     name.String(),
+	cookieData := http.Cookie{
+		Name:     ct.String(),
 		Value:    encryptedValue,
-		Path:     "/",
-		Domain:   "localhost",
-		Expires:  time.Now().Add(24 * time.Hour),
-		MaxAge:   86400,
-		Secure:   false,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-	}, nil
+		Path:     cookiePath,
+		Domain:   cookieDomain,
+		MaxAge:   cookieMaxAge,
+		Secure:   cookieSecureOnly,
+		HttpOnly: cookieHttpOnly,
+		SameSite: cookieSameSiteMode,
+	}
+
+	c.SetCookieData(&cookieData)
+
+	return nil
 }
 
-func Break(c *gin.Context, name CookieType) (value string, err error) {
-	cookie, err := c.Request.Cookie(name.String())
+func (ct CookieType) Break(c *gin.Context) (value string, err error) {
+	cookie, err := c.Request.Cookie(ct.String())
 	if err != nil {
 		return "", nil
 	}
@@ -56,16 +68,18 @@ func Break(c *gin.Context, name CookieType) (value string, err error) {
 	return decryptedValue, nil
 }
 
-func Loose(name CookieType) (newCookie http.Cookie) {
-	return http.Cookie{
-		Name:     name.String(),
+func (ct CookieType) Loose(c *gin.Context) {
+	cookieData := http.Cookie{
+		Name:     ct.String(),
 		Value:    "",
-		Path:     "/",
-		Domain:   "localhost",
+		Path:     cookiePath,
+		Domain:   cookieDomain,
 		Expires:  time.Now(),
-		MaxAge:   0,
-		Secure:   false,
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
+		MaxAge:   -1, // delete immediately
+		Secure:   cookieSecureOnly,
+		HttpOnly: cookieHttpOnly,
+		SameSite: cookieSameSiteMode,
 	}
+
+	c.SetCookieData(&cookieData)
 }
