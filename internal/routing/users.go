@@ -2,6 +2,7 @@ package routing
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -35,46 +36,18 @@ func Signup(c *gin.Context) {
 }
 
 func SignupPost(c *gin.Context) {
-	usernameRaw := c.PostForm("username")
-	if usernameRaw == "" {
-		context := gin.H{
-			"flash_message": "Username must not be empty.",
-		}
-		c.HTML(http.StatusUnprocessableEntity, "signup.tmpl", context)
-		return
-	}
-	username := norm.NFC.String(usernameRaw)
-
-	passwordRaw := c.PostForm("password")
-	password := norm.NFC.String(passwordRaw)
-	if passwordFailsGuidelines(password) {
-		context := gin.H{
-			"flash_message": "Password must be at least 20 characters long and contain at least 1 number.",
-		}
-		c.HTML(http.StatusUnprocessableEntity, "signup.tmpl", context)
-		return
-	}
-
+	rawUsername := c.PostForm("username")
+	rawPassword := c.PostForm("password")
 	dbase := c.MustGet("db").(*sql.DB)
-	if db.CheckUserExistence(dbase, c.Request.Context(), username) {
-		context := gin.H{
-			"flash_message": fmt.Sprintf(
-				"The username <%s> is already taken. Please choose a different one.",
-				username),
-		}
 
+	username, err := createUserHelper(rawUsername, rawPassword, dbase, c)
+	if err != nil {
+		context := gin.H{
+			"flash_message": err.Error(),
+		}
 		c.HTML(http.StatusUnprocessableEntity, "signup.tmpl", context)
 		return
 	}
-
-	authenticationPassword, encryptionPassword := password[10:], password[:10]
-
-	db.RegisterUser(dbase, c.Request.Context(), username, authenticationPassword)
-
-	cookie.CryptoCookie.Seal(
-		c,
-		encryptionPassword,
-	)
 
 	cookie.FlashCookie.Seal(
 		c,
@@ -85,13 +58,62 @@ func SignupPost(c *gin.Context) {
 	c.Redirect(http.StatusSeeOther, "/login")
 }
 
-func passwordFailsGuidelines(password string) (failed bool) {
-	// normalize unicode representation before doing length counting
-	if !norm.NFC.IsNormalString(password) {
-		password = norm.NFC.String(password)
+func createUserHelper(rawUsername, rawPassword string, dbase *sql.DB, c *gin.Context) (username string, err error) {
+	// What do I get from the user?
+	// - username
+	// - password
+	//
+	// What do I need to check?
+	// - username must not already exist (uniqueness guarantee)
+	// - password must be sufficiently long/secure
+	//
+	// What do I need to be able to do with this information?
+	// - Identify user
+	// - Authenticate user
+	// - Have a server-unknown encryption key
+	//
+	// How do I get those things from what I have?
+	// - username -> uniquely identify user
+	// - full password -> argon2 hash, stored on server, can be verified on future login
+	// - partial password -> argon2 hash, server stores salt, cookie stores hash value, can
+	//                       be used for encrypting server storage
+
+	// Checks
+	if !norm.NFC.IsNormalString(rawUsername) {
+		username = norm.NFC.String(rawUsername)
+	} else {
+		username = rawUsername
+	}
+	if username == "" {
+		return "", errors.New("username must not be empty")
+	}
+	if db.CheckUserExistence(dbase, c.Request.Context(), username) {
+		return "", errors.New("username is already taken")
 	}
 
-	containsDigit := strings.ContainsFunc(password, unicode.IsDigit)
-	hasMinimumLength := utf8.RuneCountInString(password) >= 20
-	return !containsDigit || !hasMinimumLength
+	password := norm.NFC.String(rawPassword)
+	if !strings.ContainsFunc(password, unicode.IsDigit) {
+		return "", errors.New("password must contain a number")
+	}
+	if !(utf8.RuneCountInString(password) >= 20) {
+		return "", errors.New("password must at least be 20 characters long")
+	}
+
+	// Creation in dbase
+	err = db.RegisterUser(dbase, c.Request.Context(), username, password)
+	if err != nil {
+		return "", errors.New("database failed to create user; please try again")
+	}
+
+	// Save encryption key cookie?
+	// - Yes: Get it out of the way now
+	// -  No: not setting any of the other cookies, and redirecting to login.
+	//        Login will have to reset this cookie anyway just in case
+	// encryptionPasswordChunk := password[:10]
+	// err = cookie.CryptoCookie.Seal(c, encryptionPasswordChunk)
+	// if err != nil {
+	// 	return username, errors.New("user created, but encryption cookie not set")
+	// }
+
+	return username, nil
 }
