@@ -17,6 +17,6 @@ func CheckUserExistence(db *sql.DB, handlerContext context.Context, username str
 }
 
 func RegisterUser(db *sql.DB, handlerContext context.Context, username, password string) (err error) {
-	_, err = db.ExecContext(handlerContext, "INSERT INTO users (name, password, access) VALUES (?, ?, 2)", username, password)
+	_, err = db.ExecContext(handlerContext, "INSERT INTO users (name, password, access) VALUES (?, ?, (SELECT id FROM roles WHERE name = 'counter'))", username, password)
 	return err
 }
