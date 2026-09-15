@@ -86,5 +86,5 @@ func passwordFailsGuidelines(password string) (failed bool) {
 
 	containsDigit := strings.ContainsFunc(password, unicode.IsDigit)
 	atLeast15Char := utf8.RuneCountInString(password) >= 15
-	return containsDigit && atLeast15Char
+	return !containsDigit || !atLeast15Char
 }
