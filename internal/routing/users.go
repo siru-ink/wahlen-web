@@ -49,7 +49,7 @@ func SignupPost(c *gin.Context) {
 	password := norm.NFC.String(passwordRaw)
 	if passwordFailsGuidelines(password) {
 		context := gin.H{
-			"flash_message": "Password must be at least 15 characters long and contain at least 1 number.",
+			"flash_message": "Password must be at least 20 characters long and contain at least 1 number.",
 		}
 		c.HTML(http.StatusUnprocessableEntity, "signup.tmpl", context)
 		return
@@ -67,7 +67,14 @@ func SignupPost(c *gin.Context) {
 		return
 	}
 
-	db.RegisterUser(dbase, c.Request.Context(), username, password)
+	authenticationPassword, encryptionPassword := password[10:], password[:10]
+
+	db.RegisterUser(dbase, c.Request.Context(), username, authenticationPassword)
+
+	cookie.CryptoCookie.Seal(
+		c,
+		encryptionPassword,
+	)
 
 	cookie.FlashCookie.Seal(
 		c,
@@ -85,6 +92,6 @@ func passwordFailsGuidelines(password string) (failed bool) {
 	}
 
 	containsDigit := strings.ContainsFunc(password, unicode.IsDigit)
-	atLeast15Char := utf8.RuneCountInString(password) >= 15
-	return !containsDigit || !atLeast15Char
+	hasMinimumLength := utf8.RuneCountInString(password) >= 20
+	return !containsDigit || !hasMinimumLength
 }
