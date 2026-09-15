@@ -123,3 +123,23 @@ func decodeHash(encodedHash string) (p *argonParams, salt, hash []byte, err erro
 
 	return p, salt, hash, nil
 }
+
+func SplitHash(hash string) (params, password string, err error) {
+	parts := strings.Split(hash, "$")
+	if len(parts) != 6 {
+		return "", "", errors.New("provided hash was not a valid argon2id hash")
+	}
+
+	params = fmt.Sprintf(
+		"$argon2id$%s$%s$%s",
+		parts[2],
+		parts[3],
+		parts[4],
+	)
+
+	return params, parts[5], nil
+}
+
+func GetKey(encodedHash string) (hash []byte, err error) {
+	return base64.RawStdEncoding.DecodeString(encodedHash)
+}

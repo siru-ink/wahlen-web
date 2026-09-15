@@ -1,16 +1,22 @@
 package routing
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
 	"database/sql"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"code.siru.ink/vdh/wahlen-web/internal/cookie"
+	"code.siru.ink/vdh/wahlen-web/internal/crypto"
 	"code.siru.ink/vdh/wahlen-web/internal/db"
+	"code.siru.ink/vdh/wahlen-web/internal/passwd"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/text/unicode/norm"
 )
@@ -99,8 +105,35 @@ func createUserHelper(rawUsername, rawPassword string, dbase *sql.DB, c *gin.Con
 		return "", errors.New("password must at least be 20 characters long")
 	}
 
+	// Setup encryptions
+	encryptionKeyHash, err := passwd.HashPassword(password[:10], passwd.DefaultArgonParams())
+	if err != nil {
+		return "", errors.New("hashing password failed")
+	}
+
+	encodedEncryptionKeyParams, encodedEncryptionKey, err := passwd.SplitHash(encryptionKeyHash)
+	if err != nil {
+		log.Fatalf("Deconstructing a new hash must not fail: %v", err)
+		// return "", errors.New("deconstructing new hash failed")
+	}
+
+	encryptionKey, err := passwd.GetKey(encodedEncryptionKey)
+	if err != nil {
+		log.Fatal("Deocding the base64 encryption key must not fail: %v", err)
+		// return "", errors.New("decoding encryption key failed")
+	}
+
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+
+	encryptedPrivateKey, err := crypto.EncryptVia(fmt.Sprintf("%x", privateKey), encryptionKey)
+	if err != nil {
+		return "", errors.New("encrypting newly created private key failed")
+	}
+
+	encodedPublicKey := base64.RawStdEncoding.EncodeToString(publicKey)
+
 	// Creation in dbase
-	err = db.RegisterUser(dbase, c.Request.Context(), username, password)
+	err = db.RegisterUser(dbase, c.Request.Context(), username, password, encodedPublicKey, encryptedPrivateKey, encodedEncryptionKeyParams)
 	if err != nil {
 		return "", errors.New("database failed to create user; please try again")
 	}
