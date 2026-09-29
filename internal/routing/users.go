@@ -119,7 +119,7 @@ func createUserHelper(rawUsername, rawPassword string, dbase *sql.DB, c *gin.Con
 
 	encryptionKey, err := passwd.GetKey(encodedEncryptionKey)
 	if err != nil {
-		log.Fatal("Deocding the base64 encryption key must not fail: %v", err)
+		log.Fatalf("Deocding the base64 encryption key must not fail: %v", err)
 		// return "", errors.New("decoding encryption key failed")
 	}
 
